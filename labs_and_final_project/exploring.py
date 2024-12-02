@@ -110,6 +110,25 @@ def is_reachable(im, pix):
     #  False otherwise
     # You can use four or eight connected - eight will return more points
     # YOUR CODE HERE
+
+    # Define 8-connected neighbors (include diagonals)
+    neighbors = [
+        (-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1) #8 connected
+    ]
+    #Image Dimentions
+    height, width = im.shape
+    # Check Pixles are within image
+    for dx, dy in neighbors:
+        neighbor_x = pix[0] + dx
+        neighbor_y = pix[1] + dy
+
+        # Ensure neighbor is within image bounds
+        if 0 <= neighbor_x < height and 0 <= neighbor_y < width:
+            # Check if the neighboring pixel is free (value 0 for free space in the thresholded image)
+            if im[neighbor_x, neighbor_y] == 0:
+                return True
+
+    # No free neighbors found
     return False
 
 
@@ -121,7 +140,24 @@ def find_all_possible_goals(im):
     @return dictionary or list or binary image of possible pixels"""
 
     # YOUR CODE HERE
+# Define the value for unseen pixels (adjust based on your thresholded map)
+    UNSEEN = 255  # 255 represents a gray pixle, uknown
 
+    # Initialize a list : all possible goals
+    possible_goals = []
+
+    # image dimensions
+    height, width = im.shape
+
+    # Iterate through all pixels in the image
+    for i in range(width):
+        for j in range(height):
+            # Check if the pixel is unseen
+            if im[i, j] == UNSEEN:
+                # Check if it is reachable
+                if is_reachable(im, (i, j)):
+                    possible_goals.append((j, i))
+    return possible_goals
 
 def find_best_point(im, possible_points, robot_loc):
     """ Pick one of the unseen points to go to
@@ -131,6 +167,25 @@ def find_best_point(im, possible_points, robot_loc):
     """
     # YOUR CODE HERE
 
+    if not possible_points:
+        # No possible points to explore
+        return None
+
+    # Initialize the best point and the minimum distance
+    best_point = None
+    min_distance = float('inf')
+
+    # Iterate through all possible points
+    for point in possible_points:
+        # Calculate Euclidean distance from robot location
+        distance = np.sqrt((robot_loc[0] - point[0])**2 + (robot_loc[1] - point[1])**2)
+
+        # Update the best point if a closer point is found
+        if distance < min_distance:
+            best_point = point
+            min_distance = distance
+
+    return best_point
 
 def find_waypoints(im, path):
     """ Place waypoints along the path
@@ -140,6 +195,27 @@ def find_waypoints(im, path):
 
     # Again, no right answer here
     # YOUR CODE HERE
+    # Parameters for waypoint selection
+    max_distance = 10  # Maximum distance between waypoints
+    waypoints = []
+
+    # Add the first point as the starting waypoint
+    if not path:
+        return waypoints  # Return an empty list if no path is given
+    waypoints.append(path[0])
+
+    # Iterate through the path to place waypoints
+    for i in range(1, len(path)):
+        # Calculate the Euclidean distance from the last waypoint
+        last_waypoint = waypoints[-1]
+        current_point = path[i]
+        distance = ((current_point[0] - last_waypoint[0])**2 + (current_point[1] - last_waypoint[1])**2)**0.5
+
+        # Place a waypoint if the distance exceeds the threshold
+        if distance >= max_distance or i == len(path) - 1:
+            waypoints.append(current_point)
+
+    return waypoints
 
 if __name__ == '__main__':
     # Doing this here because it is a different yaml than JN
