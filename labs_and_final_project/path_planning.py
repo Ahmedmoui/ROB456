@@ -356,8 +356,7 @@ def open_image(im_name):
     # Needed for reading in map info
 
     from os import open
-
-
+    
     im = imageio.imread("Data/" + im_name)
 
 

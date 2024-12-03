@@ -18,7 +18,7 @@
 import numpy as np
 
 # Your path planning code
-import path_planning as pp
+import path_planning as path_planning
 # Our priority queue
 import heapq
 
@@ -99,7 +99,8 @@ def convert_x_y_to_pix(im_size, x_y, size_pix):
         raise ValueError(f"Loc {x_y} not in image, image size {im_size}")
     return pix
 
-def is_reachable(im, pix): #rewrote this so that it checks if the point is next to an unseen point
+
+def is_reachable(im, pix):
     """ Is the pixel reachable, i.e., has a neighbor that is free?
     Used for
     @param im - the image
@@ -113,6 +114,7 @@ def is_reachable(im, pix): #rewrote this so that it checks if the point is next 
     # Define 8-connected neighbors (include diagonals)
     neighbors = [
         (-1, 0), (1, 0), (0, -1), (0, 1),  # 4-connected (up, down, left, right)
+        (-1, -1), (-1, 1), (1, -1), (1, 1)  # diagonals
     ]
 
     # Get image dimensions
@@ -123,10 +125,10 @@ def is_reachable(im, pix): #rewrote this so that it checks if the point is next 
         neighbor_x = pix[0] + dx
         neighbor_y = pix[1] + dy
 
-        # Ensure is within image bounds
+        # Ensure neighbor is within image bounds
         if 0 <= neighbor_x < height and 0 <= neighbor_y < width:
-            # Check if the neighboring pixel is unseen (value 128)
-            if im[neighbor_x, neighbor_y] == 128:
+            # Check if the neighboring pixel is free (value 0 for free space in the thresholded image)
+            if im[neighbor_x, neighbor_y] == 0:
                 return True
 
     # No free neighbors found
@@ -142,8 +144,8 @@ def find_all_possible_goals(im):
     # YOUR CODE HERE
 
     # Define the value for unseen pixels (adjust based on your thresholded map)
-    UNSEEN = 128  # 128 represents unseen pixels in the map
-    Possible_Points = 255
+    UNSEEN = 128  # Assuming 255 represents unseen pixels in the map
+
     # Initialize a list to store all possible goals
     possible_goals = []
 
@@ -154,8 +156,8 @@ def find_all_possible_goals(im):
     for i in range(height):
         for j in range(width):
             # Check if the pixel is unseen
-            if im[i, j] == Possible_Points:
-                # Check if it is next to unseen point (adjacent to unseen space)
+            if np.sum(im[i-2:i+2,j-2:j+2] == 128) == UNSEEN:
+                # Check if it is reachable (adjacent to free space)
                 if is_reachable(im, (i, j)):
                     possible_goals.append((j, i))
 
@@ -175,7 +177,7 @@ def find_best_point(im, possible_points, robot_loc):
 
     # Initialize the best point and the minimum distance
     best_point = None
-    min_distance = 0.0
+    min_distance = float('inf')
 
     # Iterate through all possible points
     for point in possible_points:
@@ -183,11 +185,13 @@ def find_best_point(im, possible_points, robot_loc):
         distance = np.sqrt((robot_loc[0] - point[0])**2 + (robot_loc[1] - point[1])**2)
 
         # Update the best point if a closer point is found
-        if distance > min_distance:
+        if distance < min_distance:
             best_point = point
-            min_distance = distance 
+            min_distance = distance
 
     return best_point
+
+
 
 def find_waypoints(im, path):
     """ Place waypoints along the path
@@ -218,6 +222,7 @@ def find_waypoints(im, path):
             waypoints.append(current_point)
 
     return waypoints
+
 
 if __name__ == '__main__':
     # Doing this here because it is a different yaml than JN
